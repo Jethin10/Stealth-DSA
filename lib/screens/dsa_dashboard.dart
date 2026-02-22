@@ -20,8 +20,7 @@ class _DsaDashboardState extends ConsumerState<DsaDashboard> {
   int _currentNavIndex = 0;
   int? _selectedZone;
   Map<String, dynamic>? _activeProblem;
-  String? dropZone1Data;
-  String? dropZone2Data;
+  Map<String, String> _droppedBlocks = {}; // Generalized drop zones
   bool isSolved = false;
   bool _showHint = false;
   bool _showingLesson = false;
@@ -45,10 +44,8 @@ class _DsaDashboardState extends ConsumerState<DsaDashboard> {
   void _openProblem(Map<String, dynamic> problem) {
     setState(() {
       _activeProblem = problem;
-      dropZone1Data = null;
-      dropZone2Data = null;
+      _droppedBlocks = {};
       isSolved = db.isProblemSolved(problem['id']);
-      // If solved, jump straight to puzzle/review. Otherwise, show the interactive lesson.
       _showingLesson = !isSolved;
       _showHint = false;
     });
@@ -65,33 +62,40 @@ class _DsaDashboardState extends ConsumerState<DsaDashboard> {
     });
   }
 
-  void _onBlockDropped(String zone, String blockId) {
+  void _onBlockDropped(String zoneId, String blockId) {
     if (_activeProblem == null) return;
-    final blocks = Map<String, dynamic>.from(_activeProblem!['blocks']);
-    final solution = Map<String, dynamic>.from(_activeProblem!['solution']);
+
+    final problem = _activeProblem!;
+    final isHard = db.hardMode && problem.containsKey('hardTemplate');
+    final blocks = Map<String, dynamic>.from(
+      isHard ? problem['hardBlocks'] : problem['blocks'],
+    );
+    final solution = Map<String, dynamic>.from(
+      isHard ? problem['hardSolution'] : problem['solution'],
+    );
 
     setState(() {
-      if (zone == '1') {
-        dropZone1Data = blocks[blockId];
-        if (blockId == solution['1']) {
-          HapticFeedback.heavyImpact();
-        } else {
-          HapticFeedback.vibrate();
-        }
+      _droppedBlocks[zoneId] = blocks[blockId];
+
+      if (blockId == solution[zoneId]) {
+        HapticFeedback.heavyImpact();
       } else {
-        dropZone2Data = blocks[blockId];
-        if (blockId == solution['2']) {
-          HapticFeedback.heavyImpact();
-        } else {
-          HapticFeedback.vibrate();
+        HapticFeedback.vibrate();
+      }
+
+      // Check if all zones are correctly filled
+      bool allCorrect = true;
+      for (final key in solution.keys) {
+        if (_droppedBlocks[key] != blocks[solution[key]]) {
+          allCorrect = false;
+          break;
         }
       }
 
-      if (dropZone1Data == blocks[solution['1']] &&
-          dropZone2Data == blocks[solution['2']]) {
+      if (allCorrect) {
         isSolved = true;
         HapticFeedback.heavyImpact();
-        db.markProblemSolved(_activeProblem!['id']);
+        db.markProblemSolved(problem['id']);
       }
     });
   }
@@ -190,6 +194,41 @@ class _DsaDashboardState extends ConsumerState<DsaDashboard> {
             ),
           ),
           const Spacer(),
+          // Hard Mode Toggle
+          Row(
+            children: [
+              Text(
+                'HARD',
+                style: AppTheme.labelStyle.copyWith(
+                  fontSize: 9,
+                  color: db.hardMode ? AppTheme.errorRed : Colors.grey,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(width: 4),
+              SizedBox(
+                height: 20,
+                width: 34,
+                child: FittedBox(
+                  fit: BoxFit.fill,
+                  child: Switch(
+                    value: db.hardMode,
+                    onChanged: (val) {
+                      setState(() {
+                        db.setHardMode(val);
+                      });
+                    },
+                    activeColor: AppTheme.errorRed,
+                    activeTrackColor: AppTheme.errorRed.withValues(alpha: 0.3),
+                    inactiveThumbColor: Colors.grey,
+                    inactiveTrackColor: Colors.grey.withValues(alpha: 0.2),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 16),
           Row(
             children: [
               Icon(
@@ -479,93 +518,134 @@ class _DsaDashboardState extends ConsumerState<DsaDashboard> {
           ),
         ),
 
-        // Problem cards
+        // Problem groups
         Expanded(
-          child: ListView.builder(
+          child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: problems.length,
-            itemBuilder: (context, index) {
-              final p = problems[index];
-              final solved = p['solved'] == true;
-              return GestureDetector(
-                onTap: () => _openProblem(p),
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceCard,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: solved
-                          ? AppTheme.matrixGreen.withValues(alpha: 0.3)
-                          : AppTheme.cardBorder,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      // Status icon
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: solved
-                              ? AppTheme.matrixGreen.withValues(alpha: 0.15)
-                              : Colors.white.withValues(alpha: 0.05),
-                        ),
-                        child: Icon(
-                          solved
-                              ? Icons.check_circle
-                              : Icons.play_circle_outline,
-                          color: solved ? AppTheme.matrixGreen : Colors.grey,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              p['title'] ?? '',
-                              style: AppTheme.codeTextStyle.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                _difficultyBadge(p['difficulty'] ?? 'Easy'),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '${p['xp']} XP',
-                                  style: AppTheme.codeTextStyle.copyWith(
-                                    fontSize: 10,
-                                    color: const Color(0xFF3B82F6),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(
-                        Icons.chevron_right,
-                        color: Colors.grey,
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+            children: _buildGroupedProblems(problems),
           ),
         ),
       ],
     );
+  }
+
+  List<Widget> _buildGroupedProblems(List<Map<String, dynamic>> problems) {
+    final groups = <String, List<Map<String, dynamic>>>{};
+    for (final p in problems) {
+      final sub = p['subcategory']?.toString() ?? 'General';
+      groups.putIfAbsent(sub, () => []).add(p);
+    }
+
+    final widgets = <Widget>[];
+    groups.forEach((subcategory, subProblems) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 24, bottom: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: AppTheme.matrixGreen,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                subcategory.toUpperCase(),
+                style: AppTheme.labelStyle.copyWith(
+                  color: Colors.white,
+                  letterSpacing: 2,
+                  fontSize: 10,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Divider(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  thickness: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      for (final p in subProblems) {
+        final solved = p['solved'] == true;
+        widgets.add(
+          GestureDetector(
+            onTap: () => _openProblem(p),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceCard,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: solved
+                      ? AppTheme.matrixGreen.withValues(alpha: 0.3)
+                      : AppTheme.cardBorder,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: solved
+                          ? AppTheme.matrixGreen.withValues(alpha: 0.15)
+                          : Colors.white.withValues(alpha: 0.05),
+                    ),
+                    child: Icon(
+                      solved ? Icons.check_circle : Icons.play_circle_outline,
+                      color: solved ? AppTheme.matrixGreen : Colors.grey,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          p['title'] ?? '',
+                          style: AppTheme.codeTextStyle.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            _difficultyBadge(p['difficulty'] ?? 'Easy'),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${p['xp']} XP',
+                              style: AppTheme.codeTextStyle.copyWith(
+                                fontSize: 10,
+                                color: const Color(0xFF3B82F6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    });
+
+    return widgets;
   }
 
   Widget _difficultyBadge(String difficulty) {
@@ -829,7 +909,6 @@ class _DsaDashboardState extends ConsumerState<DsaDashboard> {
   // ── Puzzle View ──
   Widget _buildPuzzleView() {
     final p = _activeProblem!;
-    final blocks = Map<String, dynamic>.from(p['blocks']);
 
     return Column(
       children: [
@@ -1001,52 +1080,68 @@ class _DsaDashboardState extends ConsumerState<DsaDashboard> {
         // Solved or Blocks panel
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 500),
-          child: isSolved ? _buildSolvedBanner() : _buildBlocksPanel(blocks),
+          child: isSolved
+              ? _buildSolvedBanner()
+              : _buildBlocksPanel(
+                  db.hardMode && p.containsKey('hardBlocks')
+                      ? Map<String, dynamic>.from(p['hardBlocks'])
+                      : Map<String, dynamic>.from(p['blocks']),
+                ),
         ),
       ],
     );
   }
 
   List<Widget> _buildCodeLines(Map<String, dynamic> problem) {
-    final template = (problem['codeTemplate'] as String?) ?? '';
+    final bool isHard = db.hardMode && problem.containsKey('hardTemplate');
+    final template =
+        ((isHard ? problem['hardTemplate'] : problem['codeTemplate'])
+            as String?) ??
+        '';
     final lines = template.split('\n');
     int dropZoneIndex = 0;
 
     final widgets = <Widget>[];
     for (final line in lines) {
       if (line.contains('___')) {
-        dropZoneIndex++;
-        final zoneId = '$dropZoneIndex';
-        final droppedData = zoneId == '1' ? dropZone1Data : dropZone2Data;
-
-        // Split line at ___
+        // Handle multiple blanks in one line
         final parts = line.split('___');
+        final rowChildren = <Widget>[];
+
+        for (int i = 0; i < parts.length; i++) {
+          if (parts[i].isNotEmpty) {
+            rowChildren.add(
+              Text(
+                parts[i],
+                style: AppTheme.codeTextStyle.copyWith(
+                  color: Colors.white70,
+                  fontSize: 13,
+                ),
+              ),
+            );
+          }
+
+          if (i < parts.length - 1) {
+            dropZoneIndex++;
+            final zoneId = '$dropZoneIndex';
+            final droppedData = _droppedBlocks[zoneId];
+
+            rowChildren.add(
+              JigsawDropZone(
+                placeholder: '?',
+                droppedBlockCode: droppedData,
+                onAccept: (id) => _onBlockDropped(zoneId, id),
+              ),
+            );
+          }
+        }
+
         widgets.add(
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                Text(
-                  parts[0],
-                  style: AppTheme.codeTextStyle.copyWith(
-                    color: Colors.white70,
-                    fontSize: 13,
-                  ),
-                ),
-                JigsawDropZone(
-                  placeholder: 'DROP_$zoneId',
-                  droppedBlockCode: droppedData,
-                  onAccept: (id) => _onBlockDropped(zoneId, id),
-                ),
-                if (parts.length > 1)
-                  Text(
-                    parts[1],
-                    style: AppTheme.codeTextStyle.copyWith(
-                      color: Colors.white70,
-                      fontSize: 13,
-                    ),
-                  ),
-              ],
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: rowChildren),
             ),
           ),
         );

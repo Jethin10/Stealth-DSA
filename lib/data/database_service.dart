@@ -12,10 +12,12 @@ final databaseProvider = Provider<DatabaseService>((ref) {
 
 class DatabaseService {
   late Box _problemBox;
+  late Box _settingsBox;
   final ApiService _api = ApiService();
 
   Future<void> init() async {
     _problemBox = await Hive.openBox('dsa_problems');
+    _settingsBox = await Hive.openBox('settings');
 
     // Force seed if we don't have exactly the right amount of problems (827 expected)
     // Or if the first problem doesn't have a robust lesson (meaning it was wiped by Firebase)
@@ -96,9 +98,7 @@ class DatabaseService {
         if (raw == null || raw is! Map) continue;
 
         // Safely parse map keys to strings to avoid Map<dynamic, dynamic> cast errors
-        final p =
-            raw.map((k, v) => MapEntry(k.toString(), v))
-                as Map<String, dynamic>;
+        final p = raw.map((k, v) => MapEntry(k.toString(), v));
         if (p['zone'] == zone) {
           all.add(p);
         }
@@ -117,7 +117,7 @@ class DatabaseService {
   Map<String, dynamic>? getProblem(String id) {
     final raw = _problemBox.get(id);
     if (raw == null || raw is! Map) return null;
-    return raw.map((k, v) => MapEntry(k.toString(), v)) as Map<String, dynamic>;
+    return raw.map((k, v) => MapEntry(k.toString(), v));
   }
 
   // Check if a problem is solved
@@ -166,5 +166,12 @@ class DatabaseService {
   Future<void> resetDatabase() async {
     await _problemBox.clear();
     await _seedProblems();
+  }
+
+  // Hard Mode setting
+  bool get hardMode => _settingsBox.get('hardMode', defaultValue: false);
+
+  void setHardMode(bool value) {
+    _settingsBox.put('hardMode', value);
   }
 }
