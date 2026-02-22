@@ -1,0 +1,109 @@
+﻿Running Gradle task 'assembleRelease'...                        
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 1440 bytes (99.9% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+flutter.bat : 
+At line:1 char:191
++ ... t" pub get; & "C:\flu
+tter\bin\flutter.bat" 
+build apk --release 2>&1 | 
+...
++                 ~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (:St  
+  ring) [], RemoteExcept   
+ ion
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+FAILURE: Build failed with 
+an exception.
+
+* What went wrong:
+Execution failed for task '
+:app:mergeReleaseResources'
+.
+> Multiple task action 
+failures occurred:
+   > A failure occurred 
+while executing com.android
+.build.gradle.internal.res.
+Aapt2CompileRunnable
+      > AAPT2 aapt2-8.11.1-
+12782657-windows Daemon 
+#4: Unexpected error 
+during compile 'C:\My time 
+saver app\stealth_app\andro
+id\app\src\main\res\drawabl
+e-xxhdpi\splash.png', 
+attempting to stop daemon.
+        This should not 
+happen under normal 
+circumstances, please file 
+an issue if it does.
+   > A failure occurred 
+while executing com.android
+.build.gradle.internal.res.
+Aapt2CompileRunnable
+      > AAPT2 aapt2-8.11.1-
+12782657-windows Daemon 
+#5: Unexpected error 
+during compile 'C:\My time 
+saver app\stealth_app\andro
+id\app\src\main\res\drawabl
+e-hdpi\splash.png', 
+attempting to stop daemon.
+        This should not 
+happen under normal 
+circumstances, please file 
+an issue if it does.
+   > A failure occurred 
+while executing com.android
+.build.gradle.internal.res.
+Aapt2CompileRunnable
+      > AAPT2 aapt2-8.11.1-
+12782657-windows Daemon 
+#6: Unexpected error 
+during compile 'C:\My time 
+saver app\stealth_app\andro
+id\app\src\main\res\drawabl
+e-mdpi\splash.png', 
+attempting to stop daemon.
+        This should not 
+happen under normal 
+circumstances, please file 
+an issue if it does.
+   > A failure occurred 
+while executing com.android
+.build.gradle.internal.res.
+Aapt2CompileRunnable
+      > AAPT2 aapt2-8.11.1-
+12782657-windows Daemon 
+#7: Unexpected error 
+during compile 'C:\My time 
+saver app\stealth_app\andro
+id\app\src\main\res\drawabl
+e-xhdpi\splash.png', 
+attempting to stop daemon.
+        This should not 
+happen under normal 
+circumstances, please file 
+an issue if it does.
+
+* Try:
+> Run with --stacktrace 
+option to get the stack 
+trace.
+> Run with --info or 
+--debug option to get more 
+log output.
+> Run with --scan to get 
+full insights.
+> Get more help at 
+https://help.gradle.org.
+
+BUILD FAILED in 59s
+Running Gradle task 'assembleRelease'...                           59.7s
+Gradle task 
+assembleRelease failed 
+with exit code 1

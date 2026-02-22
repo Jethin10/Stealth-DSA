@@ -1,0 +1,8 @@
+﻿Analyzing stealth_app...                                        
+
+   info - Statements in an if should be enclosed in a block - lib\data\database_service.dart:56:11 - curly_braces_in_flow_control_structures
+  error - Target of URI doesn't exist: '../theme/app_theme.dart' - lib\screens\components\commit_graph.dart:3:8 - uri_does_not_exist
+  error - Undefined name 'AppTheme' - lib\screens\components\commit_graph.dart:57:44 - undefined_identifier
+  error - Undefined name 'AppTheme' - lib\screens\components\commit_graph.dart:83:7 - undefined_identifier
+  error - Undefined name 'AppTheme' - lib\screens\components\commit_graph.dart:84:7 - undefined_identifier
+

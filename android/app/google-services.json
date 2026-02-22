@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "178192338928",
+    "project_id": "stealth-dsa",
+    "storage_bucket": "stealth-dsa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:178192338928:android:537aaba065ce25737e5735",
+        "android_client_info": {
+          "package_name": "com.example.stealth_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDL0eck6dWAL9CBQrxq9i2qg-GAriNY7R0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
